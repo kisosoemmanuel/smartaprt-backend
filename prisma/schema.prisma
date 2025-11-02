@@ -1,132 +1,148 @@
-// prisma/schema.prisma
-datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
-}
+// -------------------------
+// SMARTAPRT DATABASE SCHEMA
+// -------------------------
 
 generator client {
   provider = "prisma-client-js"
 }
 
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// -------------------------
+// ROLE MODEL
+// -------------------------
 model Role {
-  id    Int     @id @default(autoincrement())
-  name  String  @unique
+  id    Int    @id @default(autoincrement())
+  name  String @unique
   users User[]
 }
 
+// -------------------------
+// USER MODEL
+// -------------------------
 model User {
-  id            Int       @id @default(autoincrement())
-  email         String    @unique
-  phone         String?
-  passwordHash  String?
-  firstName     String?
-  lastName      String?
-  roleId        Int
-  role          Role      @relation(fields: [roleId], references: [id])
-  tenantUnitId  Int?      // references Unit.id if user is tenant
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  isActive      Boolean   @default(true)
-  refreshToken  String?   // store refresh token hash or token id if needed
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String @unique
+  password String
+  roleId   Int?
+  role     Role?  @relation(fields: [roleId], references: [id])
+
+  // Apartment relationships
+  units           Unit[]
+  payments        Payment[]
+  invoices        Invoice[]
+  updates         Update[]            @relation("UserUpdates")
+  uploadedDocs    Document[]
+  notifications   Notification[]
+  activityLogs    ActivityLog[]
+  createdTickets  MaintenanceTicket[] @relation("CreatedTickets")
+  assignedTickets MaintenanceTicket[] @relation("AssignedTickets")
 }
 
+// -------------------------
+// APARTMENT & UNIT MODELS
+// -------------------------
 model Apartment {
-  id        Int      @id @default(autoincrement())
-  name      String
-  address   String
-  units     Unit[]
-  createdAt DateTime @default(now())
+  id      Int    @id @default(autoincrement())
+  name    String
+  address String
+  units   Unit[]
 }
 
 model Unit {
-  id          Int       @id @default(autoincrement())
+  id          Int    @id @default(autoincrement())
+  unitNumber  String
   apartmentId Int
-  number      String
-  tenantId    Int?      
-  tenant      User?     @relation(fields: [tenantId], references: [id])
-  apartment   Apartment @relation(fields: [apartmentId], references: [id])
-  createdAt   DateTime  @default(now())
+  tenantId    Int?
+
+  apartment Apartment @relation(fields: [apartmentId], references: [id])
+  tenant    User?     @relation(fields: [tenantId], references: [id])
 }
 
+// -------------------------
+// BILLING MODELS
+// -------------------------
 model Payment {
-  id           Int      @id @default(autoincrement())
-  tenantId     Int
-  amount       Float
-  method       String
-  status       String   // "PENDING","COMPLETED","FAILED"
-  externalId   String?  
-  description  String?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-  tenant       User     @relation(fields: [tenantId], references: [id])
+  id          Int      @id @default(autoincrement())
+  amount      Float
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  tenantId    Int
+
+  tenant User @relation(fields: [tenantId], references: [id])
 }
 
 model Invoice {
-  id         Int      @id @default(autoincrement())
-  tenantId   Int
-  amount     Float
-  dueDate    DateTime
-  status     String   // "UNPAID","PARTIAL","PAID"
-  createdAt  DateTime @default(now())
-  tenant     User     @relation(fields: [tenantId], references: [id])
+  id        Int      @id @default(autoincrement())
+  amount    Float
+  dueDate   DateTime
+  status    String   @default("unpaid")
+  createdAt DateTime @default(now())
+  tenantId  Int
+
+  tenant User @relation(fields: [tenantId], references: [id])
 }
 
+// -------------------------
+// UPDATES & MAINTENANCE
+// -------------------------
 model Update {
-  id          Int      @id @default(autoincrement())
-  title       String
-  content     String
-  authorId    Int
-  apartmentId Int?
-  publishedAt DateTime?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  author      User     @relation(fields: [authorId], references: [id])
+  id        Int      @id @default(autoincrement())
+  title     String
+  message   String
+  createdAt DateTime @default(now())
+  authorId  Int
+
+  author User @relation("UserUpdates", fields: [authorId], references: [id])
 }
 
 model MaintenanceTicket {
   id           Int      @id @default(autoincrement())
   title        String
   description  String
-  images       Json?    // store array of URLs/paths as JSON
-  status       String   @default("OPEN")
-  priority     String   @default("MEDIUM")
-  createdById  Int?     // null => anonymous
-  assignedToId Int?
-  unitId       Int?
+  status       String   @default("pending")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
-  createdBy    User?    @relation(fields: [createdById], references: [id])
-  assignedTo   User?    @relation(fields: [assignedToId], references: [id])
-  unit         Unit?    @relation(fields: [unitId], references: [id])
+  createdById  Int?
+  assignedToId Int?
+
+  createdBy  User? @relation("CreatedTickets", fields: [createdById], references: [id])
+  assignedTo User? @relation("AssignedTickets", fields: [assignedToId], references: [id])
 }
 
+// -------------------------
+// DOCUMENTS, NOTIFICATIONS & LOGS
+// -------------------------
 model Document {
   id         Int      @id @default(autoincrement())
   title      String
-  url        String
+  fileUrl    String
   uploadedBy Int?
-  apartmentId Int?
   createdAt  DateTime @default(now())
+
   uploadedByUser User? @relation(fields: [uploadedBy], references: [id])
 }
 
 model Notification {
-  id        Int      @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
+  message     String
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
   recipientId Int
-  type      String
-  title     String
-  body      String
-  seen      Boolean  @default(false)
-  meta      Json?
-  createdAt DateTime @default(now())
-  recipient User     @relation(fields: [recipientId], references: [id])
+
+  recipient User @relation(fields: [recipientId], references: [id])
 }
 
 model ActivityLog {
   id        Int      @id @default(autoincrement())
-  actorId   Int?
   action    String
-  meta      Json?
-  createdAt DateTime @default(now())
-  actor     User?    @relation(fields: [actorId], references: [id])
+  timestamp DateTime @default(now())
+  actorId   Int?
+
+  actor User? @relation(fields: [actorId], references: [id])
 }
