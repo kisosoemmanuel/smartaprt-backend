@@ -1,15 +1,132 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
-generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+// prisma/schema.prisma
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
 }
 
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Role {
+  id    Int     @id @default(autoincrement())
+  name  String  @unique
+  users User[]
+}
+
+model User {
+  id            Int       @id @default(autoincrement())
+  email         String    @unique
+  phone         String?
+  passwordHash  String?
+  firstName     String?
+  lastName      String?
+  roleId        Int
+  role          Role      @relation(fields: [roleId], references: [id])
+  tenantUnitId  Int?      // references Unit.id if user is tenant
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  isActive      Boolean   @default(true)
+  refreshToken  String?   // store refresh token hash or token id if needed
+}
+
+model Apartment {
+  id        Int      @id @default(autoincrement())
+  name      String
+  address   String
+  units     Unit[]
+  createdAt DateTime @default(now())
+}
+
+model Unit {
+  id          Int       @id @default(autoincrement())
+  apartmentId Int
+  number      String
+  tenantId    Int?      
+  tenant      User?     @relation(fields: [tenantId], references: [id])
+  apartment   Apartment @relation(fields: [apartmentId], references: [id])
+  createdAt   DateTime  @default(now())
+}
+
+model Payment {
+  id           Int      @id @default(autoincrement())
+  tenantId     Int
+  amount       Float
+  method       String
+  status       String   // "PENDING","COMPLETED","FAILED"
+  externalId   String?  
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  tenant       User     @relation(fields: [tenantId], references: [id])
+}
+
+model Invoice {
+  id         Int      @id @default(autoincrement())
+  tenantId   Int
+  amount     Float
+  dueDate    DateTime
+  status     String   // "UNPAID","PARTIAL","PAID"
+  createdAt  DateTime @default(now())
+  tenant     User     @relation(fields: [tenantId], references: [id])
+}
+
+model Update {
+  id          Int      @id @default(autoincrement())
+  title       String
+  content     String
+  authorId    Int
+  apartmentId Int?
+  publishedAt DateTime?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  author      User     @relation(fields: [authorId], references: [id])
+}
+
+model MaintenanceTicket {
+  id           Int      @id @default(autoincrement())
+  title        String
+  description  String
+  images       Json?    // store array of URLs/paths as JSON
+  status       String   @default("OPEN")
+  priority     String   @default("MEDIUM")
+  createdById  Int?     // null => anonymous
+  assignedToId Int?
+  unitId       Int?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  createdBy    User?    @relation(fields: [createdById], references: [id])
+  assignedTo   User?    @relation(fields: [assignedToId], references: [id])
+  unit         Unit?    @relation(fields: [unitId], references: [id])
+}
+
+model Document {
+  id         Int      @id @default(autoincrement())
+  title      String
+  url        String
+  uploadedBy Int?
+  apartmentId Int?
+  createdAt  DateTime @default(now())
+  uploadedByUser User? @relation(fields: [uploadedBy], references: [id])
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  recipientId Int
+  type      String
+  title     String
+  body      String
+  seen      Boolean  @default(false)
+  meta      Json?
+  createdAt DateTime @default(now())
+  recipient User     @relation(fields: [recipientId], references: [id])
+}
+
+model ActivityLog {
+  id        Int      @id @default(autoincrement())
+  actorId   Int?
+  action    String
+  meta      Json?
+  createdAt DateTime @default(now())
+  actor     User?    @relation(fields: [actorId], references: [id])
 }
