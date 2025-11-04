@@ -1,10 +1,11 @@
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcrypt';
+require('dotenv').config(); // 👈 Add this line first
+
+const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
 
 async function main() {
-  // 1️⃣ Roles
   const roles = ['TENANT', 'CARETAKER', 'ADMIN'];
   for (const name of roles) {
     await prisma.role.upsert({
@@ -14,7 +15,6 @@ async function main() {
     });
   }
 
-  // 2️⃣ Helper for user creation
   async function createUser(email, password, name, roleName) {
     const existing = await prisma.user.findUnique({ where: { email } });
     if (!existing) {
@@ -29,10 +29,11 @@ async function main() {
         },
       });
       console.log(`✅ Created ${roleName}: ${email}`);
+    } else {
+      console.log(`ℹ️ User already exists: ${email}`);
     }
   }
 
-  // 3️⃣ Create Admin & Caretaker
   await createUser('admin@smartaprt.com', 'AdminPass123!', 'Admin User', 'ADMIN');
   await createUser('caretaker@smartaprt.com', 'CaretakerPass123!', 'Caretaker User', 'CARETAKER');
 }

@@ -31,7 +31,7 @@ model User {
   roleId   Int?
   role     Role?  @relation(fields: [roleId], references: [id])
 
-  // Apartment relationships
+  // Relations
   units           Unit[]
   payments        Payment[]
   invoices        Invoice[]
@@ -94,7 +94,7 @@ model Invoice {
 model Update {
   id        Int      @id @default(autoincrement())
   title     String
-  message   String
+  content   String
   createdAt DateTime @default(now())
   authorId  Int
 
@@ -105,7 +105,8 @@ model MaintenanceTicket {
   id           Int      @id @default(autoincrement())
   title        String
   description  String
-  status       String   @default("pending")
+  status       String   @default("open")
+  priority     String   @default("medium")
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   createdById  Int?
@@ -121,17 +122,18 @@ model MaintenanceTicket {
 model Document {
   id         Int      @id @default(autoincrement())
   title      String
-  fileUrl    String
-  uploadedBy Int?
+  url        String
   createdAt  DateTime @default(now())
+  uploadedBy Int?
 
   uploadedByUser User? @relation(fields: [uploadedBy], references: [id])
 }
 
 model Notification {
   id          Int      @id @default(autoincrement())
+  title       String
   message     String
-  read        Boolean  @default(false)
+  seen        Boolean  @default(false)
   createdAt   DateTime @default(now())
   recipientId Int
 
@@ -141,8 +143,9 @@ model Notification {
 model ActivityLog {
   id        Int      @id @default(autoincrement())
   action    String
-  timestamp DateTime @default(now())
-  actorId   Int?
+  meta      String?
+  createdAt DateTime @default(now())
+  userId    Int?
 
-  actor User? @relation(fields: [actorId], references: [id])
+  user User? @relation(fields: [userId], references: [id])
 }
