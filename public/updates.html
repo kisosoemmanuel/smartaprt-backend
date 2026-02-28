@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Updates</h2>
+<ul id="list"></ul>
+<script>
+async function load(){
+  const res=await fetch('/updates', {headers:{Authorization:'Bearer '+localStorage.getItem('access')}});
+  const data=await res.json();
+  const ul=document.getElementById('list');
+  data.forEach(u=>{const li=document.createElement('li');li.textContent=u.title+': '+u.content;ul.append(li);});
+}
+load();
+</script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Signup</h2>
+<form id="signupForm">
+  Name: <input name="name" required><br>
+  Email: <input name="email" type="email" required><br>
+  Password: <input name="password" type="password" required><br>
+  <button>Sign Up</button>
+</form>
+<script>
+const form=document.getElementById('signupForm');
+form.addEventListener('submit', async e=>{
+  e.preventDefault();
+  const data=new FormData(form);
+  const body=Object.fromEntries(data);
+  const res=await fetch('/signup',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  const json=await res.json();
+  alert(JSON.stringify(json));
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Send Suggestion</h2>
+<form id="sugForm">
+  Title: <input name="title" required><br>
+  Content: <input name="content" required><br>
+  <button>Send</button>
+</form>
+<script>
+const form=document.getElementById('sugForm');
+form.addEventListener('submit', async e=>{
+  e.preventDefault();
+  const data=Object.fromEntries(new FormData(form));
+  const res=await fetch('/suggestions',{method:'POST',headers:{'Content-Type':'application/json',Authorization:'Bearer '+localStorage.getItem('access')},body:JSON.stringify(data)});
+  alert(JSON.stringify(await res.json()));
+});
+</script>
+</body>
+</html>

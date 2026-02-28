@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<body>
+<h2>Billing (Invoices)</h2>
+<ul id="invoices"></ul>
+<script>
+async function load(){
+  const res=await fetch('/invoices',{headers:{Authorization:'Bearer '+localStorage.getItem('access')}});
+  const data=await res.json();
+  const ul=document.getElementById('invoices');
+  data.forEach(i=>{const li=document.createElement('li');li.textContent=`$${i.amount} due ${i.dueDate} status ${i.status}`;ul.append(li);});
+}
+load();
+</script>
+</body>
+</html>
